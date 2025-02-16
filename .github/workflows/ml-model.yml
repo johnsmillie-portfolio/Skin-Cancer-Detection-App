@@ -1,0 +1,43 @@
+name: ML Model Training & Deployment
+
+on:
+  push:
+    branches:
+      - development
+      - main
+  pull_request:
+    branches:
+      - development
+      - main
+
+jobs:
+  train-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r ml_model/requirements.txt
+
+      - name: Run unit tests
+        run: pytest ml_model/
+
+      - name: Train model
+        run: python ml_model/train.py
+
+      - name: Validate model
+        run: python ml_model/validate.py
+
+      - name: Deploy model
+        if: github.ref == 'refs/heads/main'
+        run: |
+          dvc add ml_model/trained_model.pkl
+          git add ml_model/trained_model.pkl.dvc
+          git commit -m "Updated model"
+          git push origin main
